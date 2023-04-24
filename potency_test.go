@@ -123,8 +123,55 @@ func TestPOST(t *testing.T) {
 	require.True(t, resp.IsError())
 }
 
+func TestExpire(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t)
+	defer ts.shutdown(t)
+
+	ts.pot.SetLifetime(1 * time.Second)
+
+	require.Equal(t, 0, ts.pot.NumCached())
+
+	key1 := uniuri.New()
+
+	resp, err := ts.r().
+		SetHeader("Idempotency-Key", fmt.Sprintf(`"%s"`, key1)).
+		SetBody("test1").
+		Post("")
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
+
+	require.Equal(t, 1, ts.pot.NumCached())
+
+	key2 := uniuri.New()
+
+	resp, err = ts.r().
+		SetHeader("Idempotency-Key", fmt.Sprintf(`"%s"`, key2)).
+		SetBody("test2").
+		Post("")
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
+
+	require.Equal(t, 2, ts.pot.NumCached())
+
+	time.Sleep(1100 * time.Millisecond)
+
+	key3 := uniuri.New()
+
+	resp, err = ts.r().
+		SetHeader("Idempotency-Key", fmt.Sprintf(`"%s"`, key3)).
+		SetBody("test3").
+		Post("")
+	require.NoError(t, err)
+	require.False(t, resp.IsError())
+
+	require.Equal(t, 1, ts.pot.NumCached())
+}
+
 type testServer struct {
 	dir string
+	pot *potency.Potency
 	srv *http.Server
 	rst *resty.Client
 }
@@ -166,6 +213,7 @@ func newTestServer(t *testing.T) *testServer {
 
 	return &testServer{
 		dir: dir,
+		pot: p,
 		srv: srv,
 		rst: rst,
 	}

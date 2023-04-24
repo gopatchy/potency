@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gopatchy/jsrest"
 )
@@ -16,15 +17,20 @@ import (
 type Potency struct {
 	handler http.Handler
 
-	// TODO: Expire based on time; probably use age-based linked list and delete at write time
-	cache   map[string]*savedResult
-	cacheMu sync.RWMutex
+	lifetime time.Duration
+
+	cache       map[string]*savedResult
+	cacheOldest *savedResult
+	cacheNewest *savedResult
+	cacheMu     sync.RWMutex
 
 	inProgress   map[string]bool
 	inProgressMu sync.Mutex
 }
 
 type savedResult struct {
+	key string
+
 	method        string
 	url           string
 	requestHeader http.Header
@@ -33,6 +39,9 @@ type savedResult struct {
 	statusCode     int
 	responseHeader http.Header
 	responseBody   []byte
+
+	added time.Time
+	newer *savedResult
 }
 
 var (
@@ -53,6 +62,7 @@ var (
 func NewPotency(handler http.Handler) *Potency {
 	return &Potency{
 		handler:    handler,
+		lifetime:   6 * time.Hour,
 		cache:      map[string]*savedResult{},
 		inProgress: map[string]bool{},
 	}
@@ -69,6 +79,20 @@ func (p *Potency) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsrest.WriteError(w, err)
 	}
+}
+
+func (p *Potency) SetLifetime(lifetime time.Duration) {
+	p.cacheMu.Lock()
+	defer p.cacheMu.Unlock()
+
+	p.lifetime = lifetime
+}
+
+func (p *Potency) NumCached() int {
+	p.cacheMu.RLock()
+	defer p.cacheMu.RUnlock()
+
+	return len(p.cache)
 }
 
 func (p *Potency) serveHTTP(w http.ResponseWriter, r *http.Request, val string) error {
@@ -139,6 +163,8 @@ func (p *Potency) serveHTTP(w http.ResponseWriter, r *http.Request, val string) 
 	p.handler.ServeHTTP(w, r)
 
 	save := &savedResult{
+		key: key,
+
 		method:        r.Method,
 		url:           r.URL.String(),
 		requestHeader: requestHeader,
@@ -149,7 +175,7 @@ func (p *Potency) serveHTTP(w http.ResponseWriter, r *http.Request, val string) 
 		responseBody:   rwi.buf.Bytes(),
 	}
 
-	p.write(key, save)
+	p.write(save)
 
 	return nil
 }
@@ -181,9 +207,32 @@ func (p *Potency) read(key string) *savedResult {
 	return p.cache[key]
 }
 
-func (p *Potency) write(key string, sr *savedResult) {
+func (p *Potency) write(sr *savedResult) {
 	p.cacheMu.Lock()
 	defer p.cacheMu.Unlock()
 
-	p.cache[key] = sr
+	sr.added = time.Now()
+
+	p.cache[sr.key] = sr
+
+	if p.cacheNewest != nil {
+		p.cacheNewest.newer = sr
+	}
+
+	p.cacheNewest = sr
+
+	if p.cacheOldest == nil {
+		p.cacheOldest = sr
+	}
+
+	p.removeExpired()
+}
+
+func (p *Potency) removeExpired() {
+	cutoff := time.Now().Add(-1 * p.lifetime)
+
+	for iter := p.cacheOldest; iter != nil && iter.added.Before(cutoff); iter = iter.newer {
+		delete(p.cache, iter.key)
+		p.cacheOldest = iter
+	}
 }
