@@ -1,8 +1,8 @@
 package potency
 
 import (
+	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -25,14 +25,14 @@ type Potency struct {
 }
 
 type savedResult struct {
-	Method        string      `json:"method"`
-	URL           string      `json:"url"`
-	RequestHeader http.Header `json:"requestHeader"`
-	Sha256        string      `json:"sha256"`
+	method        string
+	url           string
+	requestHeader http.Header
+	sha256        []byte
 
-	StatusCode     int         `json:"statusCode"`
-	ResponseHeader http.Header `json:"responseHeader"`
-	ResponseBody   []byte      `json:"responseBody"`
+	statusCode     int
+	responseHeader http.Header
+	responseBody   []byte
 }
 
 var (
@@ -81,16 +81,16 @@ func (p *Potency) serveHTTP(w http.ResponseWriter, r *http.Request, val string) 
 	saved := p.read(key)
 
 	if saved != nil {
-		if r.Method != saved.Method {
+		if r.Method != saved.method {
 			return jsrest.Errorf(jsrest.ErrBadRequest, "%s (%w)", r.Method, ErrMethodMismatch)
 		}
 
-		if r.URL.String() != saved.URL {
+		if r.URL.String() != saved.url {
 			return jsrest.Errorf(jsrest.ErrBadRequest, "%s (%w)", r.URL.String(), ErrURLMismatch)
 		}
 
 		for _, h := range criticalHeaders {
-			if saved.RequestHeader.Get(h) != r.Header.Get(h) {
+			if saved.requestHeader.Get(h) != r.Header.Get(h) {
 				return jsrest.Errorf(jsrest.ErrBadRequest, "%s: %s (%w)", h, r.Header.Get(h), ErrHeaderMismatch)
 			}
 		}
@@ -102,17 +102,17 @@ func (p *Potency) serveHTTP(w http.ResponseWriter, r *http.Request, val string) 
 			return jsrest.Errorf(jsrest.ErrBadRequest, "hash request body failed (%w)", err)
 		}
 
-		hexed := hex.EncodeToString(h.Sum(nil))
-		if hexed != saved.Sha256 {
-			return jsrest.Errorf(jsrest.ErrBadRequest, "%s vs %s (%w)", hexed, saved.Sha256, ErrBodyMismatch)
+		sha256 := h.Sum(nil)
+		if !bytes.Equal(sha256, saved.sha256) {
+			return jsrest.Errorf(jsrest.ErrBadRequest, "%s vs %s (%w)", sha256, saved.sha256, ErrBodyMismatch)
 		}
 
-		for key, vals := range saved.ResponseHeader {
+		for key, vals := range saved.responseHeader {
 			w.Header().Set(key, vals[0])
 		}
 
-		w.WriteHeader(saved.StatusCode)
-		_, _ = w.Write(saved.ResponseBody)
+		w.WriteHeader(saved.statusCode)
+		_, _ = w.Write(saved.responseBody)
 
 		return nil
 	}
@@ -139,14 +139,14 @@ func (p *Potency) serveHTTP(w http.ResponseWriter, r *http.Request, val string) 
 	p.handler.ServeHTTP(w, r)
 
 	save := &savedResult{
-		Method:        r.Method,
-		URL:           r.URL.String(),
-		RequestHeader: requestHeader,
-		Sha256:        hex.EncodeToString(bi.sha256.Sum(nil)),
+		method:        r.Method,
+		url:           r.URL.String(),
+		requestHeader: requestHeader,
+		sha256:        bi.sha256.Sum(nil),
 
-		StatusCode:     rwi.statusCode,
-		ResponseHeader: rwi.Header(),
-		ResponseBody:   rwi.buf.Bytes(),
+		statusCode:     rwi.statusCode,
+		responseHeader: rwi.Header(),
+		responseBody:   rwi.buf.Bytes(),
 	}
 
 	p.write(key, save)
