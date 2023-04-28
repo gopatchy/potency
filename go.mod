@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/dchest/uniuri v1.2.0
 	github.com/go-resty/resty/v2 v2.7.0
-	github.com/gopatchy/jsrest v0.0.0-20230427161232-1d2f7769078f
+	github.com/gopatchy/jsrest v0.0.0-20230427234754-bbc8de765b72
 	github.com/stretchr/testify v1.8.2
 	go.uber.org/goleak v1.2.1
 )
