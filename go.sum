@@ -9,10 +9,14 @@ github.com/gopatchy/jsrest v0.0.0-20230511133808-abcf8276d1ad h1:UKIRgnQNkQ7qkMD
 github.com/gopatchy/jsrest v0.0.0-20230511133808-abcf8276d1ad/go.mod h1:77Kp7hFjygVlnDH48qO917da0gyKNR2XG8mZtaAEL9w=
 github.com/gopatchy/jsrest v0.0.0-20230516044821-deb630cd744b h1:fnoLhs0kk7rc/hdk1vn8lzJ9uiq1ANr3klSUwbze1ys=
 github.com/gopatchy/jsrest v0.0.0-20230516044821-deb630cd744b/go.mod h1:MQBtK0M/Uota4CpW5NbsjDqWuoQyYjS70PJSxWf3nLE=
+github.com/gopatchy/jsrest v0.0.0-20230516044950-1c6d15dad16a h1:ehV4YITvldTIuTMAq7kk0RcrBE7m3WQKFzFl/jOqh7w=
+github.com/gopatchy/jsrest v0.0.0-20230516044950-1c6d15dad16a/go.mod h1:TVfwj+gk7iCGJRrVYR+0ovXhOc90UXPrBCOGPLE8Fsw=
 github.com/gopatchy/metadata v0.0.0-20230424223338-33e58fee42bf h1:HKCbhVEpC3++ydeapSJN2DGs9KGWMvOLpcZrwKkrXQs=
 github.com/gopatchy/metadata v0.0.0-20230424223338-33e58fee42bf/go.mod h1:VgD33raUShjDePCDBo55aj+eSXFtUEpMzs+Ie39g2zo=
 github.com/gopatchy/metadata v0.0.0-20230516041300-fc49e5f775fe h1:xPnlis/qCAYoxHx9tow1P4pO17c8JH/Hs/lHDmZej/Q=
 github.com/gopatchy/metadata v0.0.0-20230516041300-fc49e5f775fe/go.mod h1:VgD33raUShjDePCDBo55aj+eSXFtUEpMzs+Ie39g2zo=
+github.com/gopatchy/metadata v0.0.0-20230516044939-eed23a0903d5 h1:b66b4DOGTqDuw4hbxHSp0WbhXr/xAMaiFkU6iCi4nDg=
+github.com/gopatchy/metadata v0.0.0-20230516044939-eed23a0903d5/go.mod h1:VgD33raUShjDePCDBo55aj+eSXFtUEpMzs+Ie39g2zo=
 github.com/kr/pretty v0.3.0 h1:WgNl7dwNpEZ6jJ9k1snq4pZsg7DOEN8hP9Xw0Tsjwk0=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
